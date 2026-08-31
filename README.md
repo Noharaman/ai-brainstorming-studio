@@ -36,6 +36,85 @@ AI および外部 CLI は、**対象プロジェクトの既存ファイルを�
 
 ---
 
+## セットアップ
+
+### 必要なもの
+
+| | 要件 |
+| --- | --- |
+| OS | macOS |
+| Python | 3.10 以上。`tkinter` が使えること（`python3 -c "import tkinter"` が通る） |
+| LM Studio | ローカルサーバを起動できること |
+
+外部AI CLI（Claude Code / Antigravity / Codex）は**このビルドでは不要**です。3枠とも停止しているため、インストールされていなくても動作します。
+
+### 1. LM Studio を準備する
+
+1. [LM Studio](https://lmstudio.ai/) をインストールする
+2. モデルをダウンロードする（このアプリは `qwen/qwen3.8-27b` を既定の議長モデルとして想定）
+3. **Local Server を起動する**（既定で `http://localhost:1234`）
+4. ダウンロードしたモデルを**ロードする**
+
+サーバが未起動の場合、アプリは `lms server start` での自動起動を一度試みます。失敗した場合は状況を表示するだけで、それ以上の操作は行いません。
+
+### 2. 議長モデルを設定する
+
+`src/config.py` の `LM_STUDIO_CHAIR_MODEL` を、**LM Studio が報告するモデルIDと一致させてください。**
+
+```python
+LM_STUDIO_CHAIR_MODEL = "qwen/qwen3.8-27b"
+```
+
+モデルIDは次で確認できます。
+
+```bash
+curl -s http://localhost:1234/v1/models | python3 -m json.tool
+```
+
+指定したモデルがロードされていない場合、アプリは**別のモデルで代替せず停止します**（どのモデルが回答したか記録できないため）。`""` を設定するとロード済みのモデルを何でも使いますが、その場合はどのモデルが議長を務めたかを記録できません。
+
+> **推論モデルを使う場合の注意**: `LM_STUDIO_CHAIR_REASONING_EFFORT`（既定 `"none"`）はチューニング設定ではなく、**動作に必要な設定**です。qwen3.8-27b は既定で推論に全トークン予算を使い切り、本文が空のまま返します。アプリはそれを「議長が応答しない」と解釈します。プロンプト内の `/no_think` は効きません。
+
+### 3. インストールと起動
+
+```bash
+git clone https://github.com/Noharaman/ai-brainstorming-studio.git
+cd ai-brainstorming-studio
+
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+python3 -m src.main
+```
+
+### 4. 使う
+
+1. プロジェクトフォルダを選ぶ（**選んだ時点では書き込みません**）
+2. 依頼内容を入力する
+3. 実行する
+
+結果は「結論 / 採用する方針 / 実行済み / 次にやること / リスク・注意点」の形で返ります。会話とセッション記録は、対象プロジェクト直下の `.ai-brainstorm/` に保存されます。
+
+### テストの実行
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+GUI統合テストは、`tkinter` が利用できない環境では安全にスキップされます。
+
+### うまく動かないとき
+
+| 症状 | 確認すること |
+| --- | --- |
+| ヘッダーのLM Studioが緑にならない | Local Server が起動しているか。`curl http://localhost:1234/v1/models` が応答するか |
+| 「議長AIが応答しない」と表示される | `LM_STUDIO_CHAIR_MODEL` がロード済みモデルのIDと一致しているか |
+| 回答が空、または極端に遅い | 推論モデルを使っている場合は `LM_STUDIO_CHAIR_REASONING_EFFORT = "none"` になっているか |
+| 起動時に `customtkinter` が見つからない | 仮想環境を有効化して `pip install -r requirements.txt` を実行したか |
+
+---
+
 ## 1. 目標とする製品像（将来構想・現在は未動作）
 
 LM Studio のローカル AI を「秘書兼議長（オーケストレーター）」とし、Claude Code、Antigravity CLI、Codex CLI の3つの AI CLI をサブエージェントとして並列実行・議論・統合提案させるデスクトップ GUI アプリケーション。

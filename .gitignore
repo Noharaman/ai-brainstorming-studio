@@ -1,0 +1,14 @@
+.ai-brainstorm/
+__pycache__/
+*.pyc
+.DS_Store
+.venv/
+venv/
+.claude/settings.local.json
+
+# newproject defaults
+.env
+.env.*
+CLAUDE.local.md
+node_modules/
+*.log

@@ -1,0 +1,301 @@
+{
+  "catalog_version": "2026-08-29-user-updated",
+  "claude": {
+    "detected_version": "2.1.220 (Claude Code)",
+    "first_seen": "2026-08-16",
+    "last_seen": "2026-08-31",
+    "supports_separate_effort": true,
+    "models": [
+      {
+        "id": "sonnet",
+        "label": "Sonnet 5",
+        "note": "Efficient for routine tasks",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29",
+        "effort_levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "selector_default": true,
+        "reviewed_at": "2026-08-16",
+        "reviewed_source": "user-provided"
+      },
+      {
+        "id": "fable",
+        "label": "Fable 5",
+        "note": "Most capable for your hardest and longest-running tasks",
+        "billing_status": "usage_credits",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29",
+        "effort_levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "reviewed_at": "2026-08-16",
+        "reviewed_source": "user-provided"
+      },
+      {
+        "id": "opus",
+        "label": "Opus 5",
+        "note": "Best for everyday, complex tasks · ~2× usage vs Sonnet",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29",
+        "effort_levels": [
+          "low",
+          "medium",
+          "high",
+          "xhigh",
+          "max"
+        ],
+        "reviewed_at": "2026-08-16",
+        "reviewed_source": "user-provided"
+      },
+      {
+        "id": "haiku",
+        "label": "Haiku 4.5",
+        "note": "Fastest for quick answers",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29",
+        "effort_levels": [],
+        "reviewed_at": "2026-08-16",
+        "reviewed_source": "user-provided"
+      },
+      {
+        "id": "claude-sonnet-4.6-thinking",
+        "label": "Claude Sonnet 4.6 (Thinking)",
+        "note": "",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29"
+      },
+      {
+        "id": "claude-opus-4.6-thinking",
+        "label": "Claude Opus 4.6 (Thinking)",
+        "note": "",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29"
+      }
+    ]
+  },
+  "gemini": {
+    "detected_version": "1.1.22",
+    "first_seen": "2026-08-16",
+    "last_seen": "2026-08-31",
+    "supports_separate_effort": false,
+    "note": "Model IDs from `agy models` already encode their effort/quality level (e.g. '-high'), so no separate --effort flag is applied.",
+    "models": [
+      {
+        "id": "gemini-3.7-flash-high",
+        "label": "Gemini 3.7 Flash (High)",
+        "billing_status": "unknown",
+        "discovery_source": "agy_models",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.7-flash-medium",
+        "label": "Gemini 3.7 Flash (Medium)",
+        "billing_status": "unknown",
+        "discovery_source": "agy_models",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.7-flash-low",
+        "label": "Gemini 3.7 Flash (Low)",
+        "billing_status": "unknown",
+        "discovery_source": "agy_models",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.6-flash-high",
+        "label": "Gemini 3.6 Flash (High)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.6-flash-medium",
+        "label": "Gemini 3.6 Flash (Medium)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.6-flash-low",
+        "label": "Gemini 3.6 Flash (Low)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.5-flash-high",
+        "label": "Gemini 3.5 Flash (High)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.5-flash-medium",
+        "label": "Gemini 3.5 Flash (Medium)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.5-flash-low",
+        "label": "Gemini 3.5 Flash (Low)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.1-pro-high",
+        "label": "Gemini 3.1 Pro (High)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gemini-3.1-pro-low",
+        "label": "Gemini 3.1 Pro (Low)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "claude-sonnet-4-6",
+        "label": "Claude Sonnet 4.6 (Thinking)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "claude-opus-4-6-thinking",
+        "label": "Claude Opus 4.6 (Thinking)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "gpt-oss-120b-medium",
+        "label": "GPT-OSS 120B (Medium)",
+        "billing_status": "unknown",
+        "availability": true,
+        "last_seen": "2026-08-31",
+        "first_seen": "2026-08-16"
+      }
+    ]
+  },
+  "codex": {
+    "detected_version": "codex-cli 0.149.0",
+    "first_seen": "2026-08-16",
+    "last_seen": "2026-08-31",
+    "supports_separate_effort": false,
+    "note": "Codex models configured by CLI default or custom model selection",
+    "models": [
+      {
+        "id": "gpt-5.6-sol",
+        "label": "gpt-5.6-sol",
+        "note": "Latest frontier agentic coding model",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29"
+      },
+      {
+        "id": "gpt-5.6-terra",
+        "label": "gpt-5.6-terra",
+        "note": "Balanced agentic coding model for everyday work",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29"
+      },
+      {
+        "id": "gpt-5.6-luna",
+        "label": "gpt-5.6-luna",
+        "note": "Fast and affordable agentic coding model",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29"
+      },
+      {
+        "id": "gpt-5.5",
+        "label": "gpt-5.5",
+        "note": "Frontier model for complex coding, research, and real-world work",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29"
+      },
+      {
+        "id": "gpt-5.4",
+        "label": "gpt-5.4",
+        "note": "Strong model for everyday coding",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29"
+      },
+      {
+        "id": "gpt-5.4-mini",
+        "label": "gpt-5.4-mini",
+        "note": "Small, fast, and cost-efficient model for simpler coding tasks",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-29"
+      },
+      {
+        "id": "gpt-4o",
+        "label": "GPT-4o",
+        "note": "Legacy model",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-16"
+      },
+      {
+        "id": "o3-mini",
+        "label": "o3-mini",
+        "note": "Legacy reasoning model",
+        "billing_status": "subscription_safe",
+        "availability": true,
+        "last_seen": "2026-08-29",
+        "first_seen": "2026-08-16"
+      }
+    ]
+  }
+}

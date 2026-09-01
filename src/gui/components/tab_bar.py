@@ -18,6 +18,12 @@ INACTIVE_TEXT_COLOR = "#9a9a9a"
 RUNNING_DOT_COLOR = "#3b82f6"
 CLOSE_HOVER_COLOR = "#7f1d1d"
 
+#: Shown on a tab whose run finished while the user was looking elsewhere.
+#: Cleared when they switch to it. Distinct from the run-state markers, which
+#: describe a run in progress.
+UNREAD_MARKER = "◉"
+UNREAD_MARKER_COLOR = "#22c55e"
+
 TAB_WIDTH = 190
 TAB_HEIGHT = 34
 MAX_TITLE_CHARS = 16
@@ -28,6 +34,15 @@ class TabInfo:
     tab_id: str
     title: str
     running: bool = False
+    #: Run-state marker (glyph, colour), from run_state.STATE_MARKERS.
+    #:
+    #: Held on the tab rather than only pushed at the widget, because
+    #: `_rebuild()` recreates every label — opening or closing one tab used to
+    #: erase the markers on all the others.
+    marker: str = ""
+    marker_colour: str = ""
+    #: A finished run the user has not looked at yet.
+    unread: bool = False
 
 
 class BrowserTabBar(ctk.CTkFrame if ctk else object):
@@ -95,29 +110,55 @@ class BrowserTabBar(ctk.CTkFrame if ctk else object):
         self._restyle()
 
     def set_running(self, tab_id: str, running: bool) -> None:
-        for tab in self._tabs:
-            if tab.tab_id == tab_id:
-                if tab.running == running:
-                    return
-                tab.running = running
-                break
-        else:
+        """Record whether a run is in progress.
+
+        Deliberately does not touch the marker. It used to write the coarse
+        dot directly, and because finishing a run calls it *after* the final
+        state marker is set, a failed run's ✕ was overwritten with an empty
+        string the moment it appeared — the tab looked idle.
+        """
+        tab = self._tab(tab_id)
+        if tab is None or tab.running == running:
             return
-        widgets = self._tab_widgets.get(tab_id)
-        if widgets:
-            widgets["dot"].configure(text="●" if running else "")
+        tab.running = running
 
     def set_run_state_marker(self, tab_id: str, glyph: str, colour: str) -> None:
-        """Draw a precise run-state marker, replacing the coarse running dot.
+        """The phase this tab's run is in (running, approval pending, failed…)."""
+        tab = self._tab(tab_id)
+        if tab is None:
+            return
+        tab.marker = glyph
+        tab.marker_colour = colour
+        self._render_marker(tab)
 
-        `set_running()` still drives the strip on the start/finish boundaries;
-        this narrows the same dot to the phase the run is actually in
-        (approval pending, failed, ...) while it is between those boundaries.
-        """
-        widgets = self._tab_widgets.get(tab_id)
+    def set_unread(self, tab_id: str, unread: bool) -> None:
+        """Mark a finished run the user has not seen, or clear that mark."""
+        tab = self._tab(tab_id)
+        if tab is None or tab.unread == unread:
+            return
+        tab.unread = unread
+        self._render_marker(tab)
+
+    def _tab(self, tab_id: str) -> "TabInfo | None":
+        for tab in self._tabs:
+            if tab.tab_id == tab_id:
+                return tab
+        return None
+
+    def _marker_for(self, tab: TabInfo) -> tuple[str, str]:
+        """A live run outranks an unread result: the run is the newer fact."""
+        if tab.marker:
+            return tab.marker, tab.marker_colour or RUNNING_DOT_COLOR
+        if tab.unread:
+            return UNREAD_MARKER, UNREAD_MARKER_COLOR
+        return "", RUNNING_DOT_COLOR
+
+    def _render_marker(self, tab: TabInfo) -> None:
+        widgets = self._tab_widgets.get(tab.tab_id)
         if not widgets:
             return
-        widgets["dot"].configure(text=glyph, text_color=colour or RUNNING_DOT_COLOR)
+        glyph, colour = self._marker_for(tab)
+        widgets["dot"].configure(text=glyph, text_color=colour)
 
     def set_title(self, tab_id: str, title: str) -> None:
         for tab in self._tabs:
@@ -155,12 +196,13 @@ class BrowserTabBar(ctk.CTkFrame if ctk else object):
         container.grid_columnconfigure(1, weight=1)
         container.grid_columnconfigure(2, weight=0)
 
+        glyph, glyph_colour = self._marker_for(tab)
         dot = ctk.CTkLabel(
             container,
-            text="●" if tab.running else "",
+            text=glyph,
             width=12,
             font=ctk.CTkFont(size=10),
-            text_color=RUNNING_DOT_COLOR,
+            text_color=glyph_colour,
         )
         dot.grid(row=0, column=0, padx=(8, 2))
 

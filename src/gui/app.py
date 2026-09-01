@@ -200,6 +200,8 @@ class BrainstormApp:
         self.active_tab_id = tab_id
         tab.frame.tkraise()
         self.tab_bar.set_active(tab_id)
+        # Looking at the tab is what makes its result read.
+        self.tab_bar.set_unread(tab_id, False)
         self._save_tabs()
 
     def cycle_tab(self, step: int) -> str:
@@ -224,6 +226,11 @@ class BrainstormApp:
 
     def on_run_state_changed(self, tab_id: str, running: bool) -> None:
         self.tab_bar.set_running(tab_id, running)
+        if not running and tab_id != self.active_tab_id:
+            # Finished while the user was on another tab. A failed run already
+            # carries its own persistent marker, so this only has to cover the
+            # case where nothing else would show: a result waiting unseen.
+            self.tab_bar.set_unread(tab_id, True)
         self.status_bar.update_statuses(
             self.status_bar.current_statuses,
             is_running=any(tab.running for tab in self.tabs),

@@ -86,8 +86,9 @@ AI Brainstorming Studio は、ローカルの LM Studio を秘書兼議長AIと�
 - UI配置と開いているタブは `~/.ai-brainstorm-studio/`、プロジェクト固有の履歴とチェックポイントは `.ai-brainstorm/` に保存する
 - キャンセル要求時は`ProjectTab.cancelling`を内部的にTrueにする（GUI表示は未実装）。ラウンド実行中にキャンセルされた場合、`RefinementLoop`はそのラウンドのLM Studio要約呼び出しを追加実行しない
 
+- タブ帯は run の局面を区別して表示する。`run_state.STATE_MARKERS` が唯一の対応表で、実行中 `●` / 承認待ち `◆` / 一時停止 `❙❙` / 失敗 `✕` を描き分ける。完了した run をまだ見ていないタブには未読印 `◉` が付き、そのタブを開くと消える。マーカーは `TabInfo` が保持するため、他のタブを開閉して帯を再構築しても失われない。
+
 未実装:
-- タブに running、cancelling、completed-unread、failed、paused を区別して**表示**する（内部フラグのみで、UI上の区別は無い）
 - 実行ショートカット（Cmd/Ctrl+Enter）を依頼入力欄にフォーカスがある場合だけ有効にする（現在はグローバル）
 
 ## Project creation（将来構想・現在は未実装）

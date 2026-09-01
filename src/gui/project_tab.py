@@ -617,7 +617,7 @@ class ProjectTab:
             wrap="word",
         )
         self.request_text.grid(row=0, column=0, sticky="nsew", padx=10, pady=(8, 4))
-        self.request_text.bind("<Command-Return>", lambda e: self.submit_from_shortcut())
+        self._bind_submit_shortcut()
 
         btn_row = ctk.CTkFrame(input_bar, fg_color="transparent")
         btn_row.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 8))
@@ -1325,12 +1325,35 @@ class ProjectTab:
 
     # ------------------------------------------------------------ lifecycle
 
-    def submit_from_shortcut(self) -> None:
-        content = self.request_text.get("1.0", "end-1c")
-        if content.endswith("\n"):
-            self.request_text.delete("end-2c", "end-1c")
+    def _bind_submit_shortcut(self) -> None:
+        """Cmd/Ctrl+Enter submits, but only from this tab's request box.
+
+        Bound on the widget rather than through `bind_all`, so it cannot fire
+        while the focus is somewhere else in the window. Ctrl is included for
+        keyboards without a Command key.
+        """
+        for sequence in (
+            "<Command-Return>",
+            "<Command-KP_Enter>",
+            "<Control-Return>",
+            "<Control-KP_Enter>",
+        ):
+            self.request_text.bind(sequence, self.submit_from_shortcut)
+
+    def submit_from_shortcut(self, _event: object | None = None) -> str:
+        """Start a run and swallow the keystroke.
+
+        Returning "break" stops Tk's own Return handling, which would insert a
+        newline into the box we are about to submit. The previous version
+        returned None and deleted the stray newline afterwards — which only
+        worked because a second, global binding ran after the insertion, and
+        would have eaten a newline the user typed on purpose once that second
+        binding went away. Verified: with "break" the text is unchanged, without
+        it Tk appends "\n".
+        """
         if not self.running:
             self.start_brainstorm()
+        return "break"
 
     def session_state(self) -> dict:
         return {

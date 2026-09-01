@@ -389,8 +389,14 @@ class BrainstormApp:
 
     def _bind_shortcuts(self) -> None:
         # Shift+Tab cycles tabs, as requested; Ctrl/Cmd variants match browsers.
-        for sequence in ("<Shift-Tab>", "<ISO_Left_Tab>", "<Control-Tab>"):
-            self.root.bind_all(sequence, lambda _event=None: self.cycle_tab(1))
+        #
+        # Shift+Tab is also how you move focus backwards inside a text field,
+        # so the handler steps aside there rather than the app claiming the
+        # key everywhere. Ctrl/Cmd+Tab have no text-editing meaning and stay
+        # unconditional.
+        for sequence in ("<Shift-Tab>", "<ISO_Left_Tab>"):
+            self.root.bind_all(sequence, self._cycle_tab_unless_editing)
+        self.root.bind_all("<Control-Tab>", lambda _event=None: self.cycle_tab(1))
         for sequence in ("<Control-Shift-Tab>", "<Command-Shift-braceleft>"):
             self.root.bind_all(sequence, lambda _event=None: self.cycle_tab(-1))
         self.root.bind_all("<Command-Shift-braceright>", lambda _event=None: self.cycle_tab(1))
@@ -406,13 +412,11 @@ class BrainstormApp:
                     lambda _event=None, n=number: self._jump_to_tab(n),
                 )
 
-        for sequence in (
-            "<Command-Return>",
-            "<Command-KP_Enter>",
-            "<Control-Return>",
-            "<Control-KP_Enter>",
-        ):
-            self.root.bind_all(sequence, self._submit_shortcut)
+        # Cmd/Ctrl+Enter is bound by each tab on its own request box
+        # (ProjectTab._bind_submit_shortcut). It used to be bind_all, which
+        # meant it fired from anywhere in the window — including while the
+        # focus was in an unrelated field — and fired *twice* when the focus
+        # was in the request box, once from the widget and once from here.
 
     def _new_tab_shortcut(self, _event: object | None = None) -> str:
         self.new_tab()
@@ -428,11 +432,27 @@ class BrainstormApp:
             self.activate_tab(self.tabs[number - 1].tab_id)
         return "break"
 
-    def _submit_shortcut(self, _event: object | None = None) -> str:
-        tab = self._active_tab()
-        if tab:
-            tab.submit_from_shortcut()
-        return "break"
+    def _cycle_tab_unless_editing(self, _event: object | None = None):
+        """Cycle tabs, unless the user is in a text field.
+
+        Returning None there lets Tk do its own thing, which for Shift+Tab is
+        moving focus backwards — the behaviour someone typing in a text box
+        expects, and which the app was overriding.
+        """
+        if self._focus_is_text_input():
+            return None
+        return self.cycle_tab(1)
+
+    def _focus_is_text_input(self) -> bool:
+        try:
+            widget = self.root.focus_get()
+        except Exception:
+            return False
+        if widget is None:
+            return False
+        # Class name rather than isinstance: CTk wraps the real tk widgets,
+        # and the wrapper is not what holds the focus.
+        return widget.winfo_class() in ("Text", "Entry", "TEntry")
 
     # ----------------------------------------------------------- background
 

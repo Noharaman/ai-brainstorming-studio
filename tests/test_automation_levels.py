@@ -11,7 +11,11 @@ from src.services.implementation_plan import (
 )
 from src.services.refinement_loop import MAX_TEST_REPAIR_ATTEMPTS, RefinementLoop
 from src.services.role_orchestrator import RoleOrchestrator
-from tests.support import enable_automatic_tests, enable_implementation_writes
+from tests.support import (
+    enable_all_slots,
+    enable_automatic_tests,
+    enable_implementation_writes,
+)
 
 
 class LevelDefinitionTest(unittest.TestCase):
@@ -539,6 +543,104 @@ class TestsAreNotRunAutomaticallyTest(unittest.TestCase):
         runner_cls.assert_not_called()
         self.assertTrue(outcome.attempted)
         self.assertIsNone(outcome.test_passed)
+
+
+
+class UiTextMatchesEnabledSlotsTest(unittest.TestCase):
+    """The run button said "3社に同時ブレスト依頼" for a build that launches no
+    external CLI at all — the same false promise the level menu used to make.
+    These strings are derived from the slot switches, so they cannot drift."""
+
+    def setUp(self) -> None:
+        from src.gui import project_tab
+
+        self.pt = project_tab
+
+    def test_no_open_slots_names_lm_studio_only(self) -> None:
+        self.assertEqual(self.pt.enabled_cli_slots(), [])
+        self.assertIn("LM Studio", self.pt.run_button_label())
+        self.assertIn("LM Studio", self.pt.consultation_hint())
+        self.assertIn("LM Studio", self.pt.integrating_message())
+
+    def test_no_open_slots_never_claims_three(self) -> None:
+        for text in (
+            self.pt.run_button_label(),
+            self.pt.consultation_hint(),
+            self.pt.integrating_message(),
+        ):
+            with self.subTest(text=text):
+                self.assertNotIn("3社", text)
+                for vendor in ("Claude", "Antigravity", "Codex"):
+                    self.assertNotIn(vendor, text)
+
+    def test_one_open_slot_names_that_one(self) -> None:
+        enable_all_slots(self)
+        from src import config
+
+        config.CODEX_SLOT_ENABLED = False
+        config.ANTIGRAVITY_SLOT_ENABLED = False
+        self.assertEqual(self.pt.enabled_cli_slots(), ["Claude"])
+        self.assertIn("Claude", self.pt.run_button_label())
+        self.assertNotIn("3社", self.pt.run_button_label())
+
+    def test_all_open_slots_counts_them(self) -> None:
+        enable_all_slots(self)
+        self.assertEqual(
+            self.pt.enabled_cli_slots(), ["Claude", "Antigravity", "Codex"]
+        )
+        self.assertIn("3社", self.pt.run_button_label())
+
+
+class DisabledSlotIsNotShownAsAFaultTest(unittest.TestCase):
+    """A closed slot is a decision, not a broken login. Showing it red sends
+    users off re-authenticating a CLI that was never going to run."""
+
+    def test_the_badge_is_not_the_error_colour(self) -> None:
+        from src.gui.components import header_status_bar as hsb
+
+        class _Status:
+            status = "slot_disabled"
+
+        icon, background, _hover, _text = hsb.status_visual(_Status())
+        self.assertNotEqual(icon, "🔴")
+        self.assertNotEqual(background, "#7F1D1D", "must not use the error red")
+
+    def test_the_guidance_says_it_is_deliberate(self) -> None:
+        from src.services import cli_status
+
+        guidance = cli_status.guidance_for("slot_disabled")
+        self.assertIn("不具合ではありません", guidance)
+        self.assertIn("safety-model", guidance)
+
+
+
+class ClosedSlotsAreReportedConsistentlyTest(unittest.TestCase):
+    """All three lamps must agree when all three slots are closed.
+
+    codex was the odd one out: _check_claude and _check_antigravity each
+    consulted the slot switch, but the generic _check_command did not, so the
+    header showed two paused slots and one merely-unverified one.
+    """
+
+    def _statuses(self):
+        from src.services.health_checker import HealthChecker
+
+        return {s.name: s.status for s in HealthChecker().check_all()}
+
+    def test_every_installed_but_closed_slot_reports_slot_disabled(self) -> None:
+        import shutil
+
+        statuses = self._statuses()
+        for command, name in (("claude", "claude"), ("agy", "Antigravity(agy)"), ("codex", "codex")):
+            if not shutil.which(command):
+                continue  # not installed here; nothing to report about
+            with self.subTest(agent=name):
+                self.assertEqual(statuses.get(name), "slot_disabled")
+
+    def test_lm_studio_is_not_reported_as_a_closed_slot(self) -> None:
+        """It is the one thing this build does use."""
+        statuses = self._statuses()
+        self.assertNotEqual(statuses.get("LM Studio"), "slot_disabled")
 
 
 if __name__ == "__main__":

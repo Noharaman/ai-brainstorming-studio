@@ -192,6 +192,19 @@ class HealthChecker:
 
     def _check_command(self, command: str, installed_status: str = "installed") -> ToolStatus:
         path = shutil.which(command)
+        if path and not config.is_agent_slot_enabled(command):
+            # `_check_claude` and `_check_antigravity` each did this for
+            # themselves, so codex was the one agent whose closed slot still
+            # showed as an ordinary "installed" lamp — the header said Claude
+            # and Antigravity were paused while Codex looked merely unverified,
+            # for three slots that are all equally closed.
+            return ToolStatus(
+                command,
+                False,
+                f"{path} (slot switched off in this build)",
+                status="slot_disabled",
+                executable_path=path,
+            )
         return ToolStatus(
             command,
             bool(path),

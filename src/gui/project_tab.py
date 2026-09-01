@@ -68,6 +68,48 @@ class ApprovalGate:
 
 MAX_LOG_CHARS = 400_000
 
+
+#: Display names for the AI CLI slots, in header order.
+_SLOT_LABELS = (("claude", "Claude"), ("gemini", "Antigravity"), ("codex", "Codex"))
+
+
+def enabled_cli_slots() -> list[str]:
+    """Display names of the AI CLI slots this build will actually launch."""
+    return [
+        label for agent, label in _SLOT_LABELS if config.is_agent_slot_enabled(agent)
+    ]
+
+
+def run_button_label() -> str:
+    """What the run button says.
+
+    Derived from the slots rather than hardcoded: the button read
+    "3社に同時ブレスト依頼" for a build that launches no external CLI at all,
+    which is the same kind of claim the automation-level menu used to make.
+    """
+    slots = enabled_cli_slots()
+    if not slots:
+        return "✨ 議長AI (LM Studio) に依頼"
+    if len(slots) == 1:
+        return f"✨ {slots[0]} に依頼"
+    return f"✨ {len(slots)}社に同時ブレスト依頼"
+
+
+def consultation_hint() -> str:
+    slots = enabled_cli_slots()
+    send_key = "(Cmd+Enter で送信)"
+    if not slots:
+        return f"💡 ローカルの議長AI (LM Studio) が回答します {send_key}"
+    joined = ", ".join(slots)
+    return f"💡 {joined} の意見を議長AIが統合します {send_key}"
+
+
+def integrating_message() -> str:
+    slots = enabled_cli_slots()
+    if not slots:
+        return "👑 議長AI (LM Studio) が回答を作成中..."
+    return f"👑 議長AI (LM Studio) が{len(slots)}社の意見を比較・統合中..."
+
 # Display-side sentinels. agent_model_selector.CHAIR_AUTO_SELECT is the value
 # that actually flows through RunContext/AgentSelection; this label is the
 # GUI-only text shown in the dropdown, translated at the collect_user_selections()
@@ -322,7 +364,28 @@ class ProjectTab:
         effort_font = fonts.font(10)
 
         self.model_menus: dict[str, ctk.CTkOptionMenu] = {}
+        if not enabled_cli_slots():
+            # Every slot is closed, so a model picker would be three dropdowns
+            # that change nothing. Say why instead.
+            ctk.CTkLabel(
+                model_frame,
+                text=(
+                    "外部AI CLIは現在すべて停止しています（安全上の判断）。\n"
+                    "相談はローカルの LM Studio のみで行われます。"
+                ),
+                font=fonts.font(11),
+                text_color="gray60",
+                anchor="w",
+                justify="left",
+                wraplength=250,
+            ).grid(row=1, column=0, columnspan=2, sticky="ew", pady=(2, 4))
+
         for idx, (agent_key, label_text) in enumerate(AGENT_VIEWS):
+            slot_open = config.is_agent_slot_enabled(agent_key)
+            if not slot_open:
+                # Keep the StringVar so collect_user_selections() and tab
+                # restore stay unchanged; just do not offer a control.
+                continue
             model_row = 1 + 2 * idx
             effort_row = model_row + 1
             ctk.CTkLabel(model_frame, text=label_text, font=fonts.font(11)).grid(
@@ -562,7 +625,7 @@ class ProjectTab:
 
         hint_label = ctk.CTkLabel(
             btn_row,
-            text="💡 3社 (Claude, Antigravity, Codex) の意見を議長AIが統合します (Cmd+Enter で送信)",
+            text=consultation_hint(),
             font=fonts.font(11),
             text_color="gray50",
             anchor="w",
@@ -571,7 +634,7 @@ class ProjectTab:
 
         self.run_button = ctk.CTkButton(
             btn_row,
-            text="✨ 3社に同時ブレスト依頼",
+            text=run_button_label(),
             command=self.start_brainstorm,
             height=30,
             font=fonts.bold(12),
@@ -1222,7 +1285,7 @@ class ProjectTab:
         elif "Starting brainstorm" in clean or "Running Round" in clean:
             self.timeline.update_thinking("Claude, Antigravity, Codex に並列ブレスト依頼中...")
         elif "Asking LM Studio" in clean or "ChairAgent" in clean or "Synthesizing" in clean:
-            self.timeline.update_thinking("👑 議長AI (LM Studio) が3社の意見を比較・統合中...")
+            self.timeline.update_thinking(integrating_message())
         elif "Cancellation requested" in clean:
             self.timeline.update_thinking("キャンセル要求を処理中...")
 

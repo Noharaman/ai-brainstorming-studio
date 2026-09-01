@@ -42,6 +42,11 @@ def status_visual(status: any) -> tuple[str, str, str, str]:
         return "🟢", "#064E3B", "#065F46", "#A7F3D0"
     if code == "checking":
         return "🔵", "#1E3A8A", "#1E40AF", "#93C5FD"
+    if code == "slot_disabled":
+        # Grey, not red. A closed slot is a decision this build made, not a
+        # fault on the user's machine — showing it as an error sends people
+        # off re-authenticating a CLI that was never going to run.
+        return "⏸", "#374151", "#4B5563", "#D1D5DB"
     if code in _NEUTRAL_STATUSES or code in _WARNING_STATUSES:
         return "🟡", "#78350F", "#92400E", "#FDE68A"
     return "🔴", "#7F1D1D", "#991B1B", "#FCA5A5"

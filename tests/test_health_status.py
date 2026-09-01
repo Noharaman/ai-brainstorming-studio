@@ -35,6 +35,7 @@ from src.services.cli_setup_guidance import (
     CODEX_LOGIN_COMMAND,
     for_status as setup_guidance_for_status,
 )
+from tests.support import enable_all_slots
 from src.services.health_checker import (
     HealthChecker,
     ToolStatus,
@@ -62,12 +63,29 @@ class PreflightStatusCallbackTest(unittest.IsolatedAsyncioTestCase):
 
 class HealthStatusMergeTest(unittest.TestCase):
     def test_codex_discovery_does_not_claim_login_is_verified(self) -> None:
+        """Finding the binary says nothing about whether the user is logged in."""
+        enable_all_slots(self)
         with patch("src.services.health_checker.shutil.which", return_value="/usr/local/bin/codex"):
             status = HealthChecker()._check_command(
                 "codex", installed_status="installed_unverified"
             )
 
         self.assertEqual(status.status, "installed_unverified")
+
+    def test_a_closed_slot_outranks_discovery(self) -> None:
+        """An installed CLI whose slot is closed is paused, not unverified.
+
+        _check_claude and _check_antigravity already did this; the generic
+        _check_command did not, so codex alone showed an ordinary lamp while
+        the other two showed as paused.
+        """
+        with patch("src.services.health_checker.shutil.which", return_value="/usr/local/bin/codex"):
+            status = HealthChecker()._check_command(
+                "codex", installed_status="installed_unverified"
+            )
+
+        self.assertEqual(status.status, "slot_disabled")
+        self.assertFalse(status.available)
 
     def test_runtime_auth_failure_outranks_binary_discovery(self) -> None:
         discovery = [

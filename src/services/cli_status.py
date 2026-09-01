@@ -38,7 +38,11 @@ _RECOVERY_GUIDANCE_JA: dict[str, str] = {
         "CLIは正常終了しましたが、依頼した応答が返りませんでした（起動時の通知だけを出して終了した可能性があります）。"
         "ターミナルで同じCLIを単体実行し、ログイン済みで実際に回答が返る状態か確認してください。"
     ),
-    "slot_disabled": "このAI枠はビルド側で無効化されているため実行されませんでした。",
+    "slot_disabled": (
+        "このAI枠は安全上の理由で停止しています（不具合ではありません）。"
+        "各CLIのhook / MCP / pluginを実行ごとに無効化できることを実証できていないため、"
+        "OSサンドボックスが実装されるまで起動しません。詳細は docs/safety-model.md を参照してください。"
+    ),
     "failed": "CLIがエラー終了しました。詳細ログを確認してください。",
     "unknown": "原因を特定できませんでした。詳細ログを確認してください。",
 }
@@ -62,7 +66,7 @@ _STATUS_LABELS_JA: dict[str, str] = {
     "permission_error": "ローカル権限または信頼設定エラー",
     "rate_limited": "利用上限またはレート制限",
     "skipped": "スキップ",
-    "slot_disabled": "スロット無効",
+    "slot_disabled": "停止中（安全上の判断）",
     "timeout": "タイムアウト",
     "unsupported_client": "旧クライアントまたは非対応利用枠",
     "unknown": "不明なエラー",

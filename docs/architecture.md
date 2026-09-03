@@ -19,7 +19,7 @@ AI Brainstorming Studio は、ローカルの LM Studio を秘書兼議長AIと�
 停止理由と安全境界の設計は `safety-model.md` を参照してください。以下「目標状態」と明記した節は、スロットを再開する場合の設計であり、現在は動作しません。
 
 ## Permission policy
-現在のビルドでは、**対象プロジェクトの既存ファイルへの書き込みは一切行いません**。アプリ自身の記録のみ `.ai-brainstorm/` へ保存します。
+現在のビルドでは、**対象プロジェクトの既存ファイルへの書き込みは一切行いません**。アプリ自身のセッション記録は `.ai-brainstorm/`、CLI間の共有メモリは `.ai-shared/` へ保存します。
 
 以下は書き込み機能を再開する場合の設計です（現在は未動作）。
 - 自動: 選択プロジェクト内の通常ファイル作成・編集、既存依存のインストール、ローカルのtest/build/lint/起動確認
@@ -48,9 +48,9 @@ AI Brainstorming Studio は、ローカルの LM Studio を秘書兼議長AIと�
 - `src/services/cli_setup_guidance.py`: Claude Code、Antigravity CLI、Codex CLIについて、ユーザーが確認して使う公式手順・コピー用インストール／ログインコマンドを管理する。インストールやログインは実行しない
 - `src/config.py`: 定数、除外ディレクトリ、重要ファイル、旧strictポリシー用の環境変数除外リスト
 - `src/models.py`: スキャン結果、CLI結果、ブレスト結果のデータ構造
-- `src/services/context_scanner.py`: ファイルツリー、主要ファイル、AI関連ファイルの検出
-- `src/services/workspace_manager.py`: `.ai-brainstorm/` の作成、セッション成果物、履歴、vendor context の保存
-- `src/services/prompt_builder.py`: 共通コンテキストとAI別プロンプトの生成
+- `src/services/context_scanner.py`: ファイルツリー、主要ファイル、AI関連ファイル、`.ai-shared/memory.md` の検出
+- `src/services/workspace_manager.py`: `.ai-brainstorm/` のセッション成果物・履歴・vendor context保存、および `.ai-shared/` の共有メモリ雛形と内側の `.gitignore` の初期化
+- `src/services/prompt_builder.py`: 共通コンテキストとAI別プロンプトの生成。議長AIの要約結果とは別に、`AGENTS.md` と共有メモリを上限付きの固定枠として全CLIへ同一内容で渡す。LM Studioが応答しない場合もこの固定枠は保持する
 - `src/services/role_orchestrator.py`: Author、Critic、Verifier のラウンド別ローテーション計画
 - `src/services/chair_agent.py`: LM Studio の OpenAI互換ローカルAPI呼び出し。議長モデルは `config.LM_STUDIO_CHAIR_MODEL` で固定し、未ロードならfail-closed（別モデルへ勝手に流れない）。`config.LM_STUDIO_CHAIR_REASONING_EFFORT` を `reasoning_effort` として送る（既定 `none`。送らないと推論モデルが本文を返さず、議長が機能しない）
 - `src/services/cli_adapters.py`: Claude、Antigravity、Codex のコマンド差分吸収。`WriteGrant` が無ければ全AIがread-only（claude `--permission-mode plan --tools ""`、agy `--mode plan --sandbox`、codex `--sandbox read-only`）。grantがある場合のみ、その1体だけが書込モードになる（claude `acceptEdits` + `--tools default`、agy `accept-edits`、codex `workspace-write`）。`bypassPermissions` と `danger-full-access` はどの経路でも出力しない
@@ -142,6 +142,8 @@ AI Brainstorming Studio は、ローカルの LM Studio を秘書兼議長AIと�
 ## Constraints
 - 対象プロジェクト選択時点ではファイルを書き込まない
 - `.ai-brainstorm/` は実行開始または明示的なチャット操作時にだけ作成する
+- `.ai-shared/` も実行開始時にだけ初期化し、既存の共有メモリを上書きしない
+- `.ai-shared/memory.md` は変化する引継ぎだけを扱い、コード、Git状態、一次資料の代わりにしない。秘密情報・会話全文・未確認の推測を保存しない
 - 既存AI設定ファイルは検出するが、勝手に変更しない
 - 秘密情報をログ・保存物・GUI表示へ出さない（`secret_redactor`）
 - **（レガシー / Phase Bで撤去）** CLI子プロセスから課金系・クラウド系環境変数を除去する。Existing CLI Modeでは、利用者が設定した`ANTHROPIC_API_KEY`・Bedrock/Vertex・provider等は**除去しない**。「秘密値をログへ出さない」ことと「既存の環境変数を消す」ことは別の要件であり、前者だけを維持する

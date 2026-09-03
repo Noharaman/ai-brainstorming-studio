@@ -78,6 +78,25 @@ class WorkspaceBoundaryTest(unittest.TestCase):
         )
         self.assertNotIn("abc123def456", written)
 
+    def test_initialize_creates_local_cross_cli_memory(self) -> None:
+        memory = (self.root / ".ai-shared" / "memory.md").read_text(encoding="utf-8")
+        local_ignore = (self.root / ".ai-shared" / ".gitignore").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("# Cross-CLI Shared Memory", memory)
+        self.assertIn("Codex、Claude Code、Antigravity CLI", memory)
+        self.assertEqual(local_ignore, "*\n")
+
+    def test_initialize_does_not_overwrite_existing_memory(self) -> None:
+        custom = "# Cross-CLI Shared Memory\n\n- user decision\n"
+        path = self.root / ".ai-shared" / "memory.md"
+        path.write_text(custom, encoding="utf-8")
+
+        self.workspace.initialize()
+
+        self.assertEqual(path.read_text(encoding="utf-8"), custom)
+
 
 class ChatRoomBoundaryTest(unittest.TestCase):
     def setUp(self) -> None:

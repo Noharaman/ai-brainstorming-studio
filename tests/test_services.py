@@ -28,6 +28,7 @@ from src.services.chair_agent import ChairAgent
 from src.services.chat_room_manager import ChatRoomManager
 from src.services.cli_adapters import CliAdapters
 from src.services.cli_runner import CliRunner
+from src.services.context_scanner import ContextScanner
 from src.services.process_runner import ProcessRunner
 from src.services.health_checker import HealthChecker
 from src.services.lm_studio_manager import LMStudioManager
@@ -70,6 +71,89 @@ class ChairAgentCacheTest(unittest.TestCase):
         chair.invalidate_cache()
         self.assertIsNone(chair._available_cache)
         self.assertIsNone(chair._model_cache)
+
+
+class CrossCliSharedMemoryTest(unittest.TestCase):
+    def test_scanner_reads_shared_memory_even_though_runtime_dir_is_excluded_from_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "AGENTS.md").write_text("# Rules\n", encoding="utf-8")
+            memory_dir = root / ".ai-shared"
+            memory_dir.mkdir()
+            (memory_dir / "memory.md").write_text("# Shared\n- decision\n", encoding="utf-8")
+
+            scan = ContextScanner(root).scan()
+
+        self.assertEqual(scan.important_files["AGENTS.md"], "# Rules\n")
+        self.assertEqual(
+            scan.important_files[".ai-shared/memory.md"],
+            "# Shared\n- decision\n",
+        )
+        self.assertFalse(any(".ai-shared" in item for item in scan.tree))
+
+    def test_prompt_pack_keeps_rules_and_memory_verbatim_when_chair_summarizes(self) -> None:
+        class _Chair:
+            def chat(self, *args, **kwargs):
+                return "chair summary"
+
+        scan = ScanResult(
+            project_root=Path("."),
+            tree=[],
+            important_files={
+                "AGENTS.md": "# Rules\nmandatory-rule",
+                ".ai-shared/memory.md": "# Shared\nuser-decision",
+            },
+            vendor_paths=["AGENTS.md"],
+        )
+
+        pack = PromptBuilder(_Chair()).build_context_pack(scan, "request", "raw")
+
+        self.assertIn("mandatory-rule", pack)
+        self.assertIn("user-decision", pack)
+        self.assertIn("chair summary", pack)
+        self.assertLessEqual(len(pack), config.MAX_CONTEXT_PACK_CHARS)
+
+    def test_fallback_pack_also_keeps_rules_and_memory_verbatim(self) -> None:
+        class _OfflineChair:
+            def chat(self, *args, **kwargs):
+                return ""
+
+        scan = ScanResult(
+            project_root=Path("."),
+            tree=[],
+            important_files={
+                "AGENTS.md": "# Rules\nmandatory-rule",
+                ".ai-shared/memory.md": "# Shared\nuser-decision",
+            },
+            vendor_paths=["AGENTS.md"],
+        )
+
+        pack = PromptBuilder(_OfflineChair()).build_context_pack(scan, "request", "raw")
+
+        self.assertIn("mandatory-rule", pack)
+        self.assertIn("user-decision", pack)
+        self.assertIn("今回の依頼:", pack)
+        self.assertLessEqual(len(pack), config.MAX_CONTEXT_PACK_CHARS)
+
+    def test_shared_memory_is_redacted_before_prompt_injection(self) -> None:
+        class _Chair:
+            def chat(self, *args, **kwargs):
+                return "chair summary"
+
+        scan = ScanResult(
+            project_root=Path("."),
+            tree=[],
+            important_files={
+                ".ai-shared/memory.md": "# Shared\nAPI_TOKEN=abc123def456",
+            },
+            vendor_paths=[],
+        )
+
+        context, _, pack = PromptBuilder(_Chair()).build_context_documents(scan, "request")
+
+        self.assertNotIn("abc123def456", context)
+        self.assertNotIn("abc123def456", pack)
+        self.assertIn("API_TOKEN", context)
 
 
 class Python310CompatibilityTest(unittest.TestCase):

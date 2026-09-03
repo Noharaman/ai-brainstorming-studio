@@ -388,15 +388,15 @@ class BrainstormApp:
     # ------------------------------------------------------------ shortcuts
 
     def _bind_shortcuts(self) -> None:
-        # Shift+Tab cycles tabs, as requested; Ctrl/Cmd variants match browsers.
-        #
-        # Shift+Tab is also how you move focus backwards inside a text field,
-        # so the handler steps aside there rather than the app claiming the
-        # key everywhere. Ctrl/Cmd+Tab have no text-editing meaning and stay
-        # unconditional.
-        for sequence in ("<Shift-Tab>", "<ISO_Left_Tab>"):
-            self.root.bind_all(sequence, self._cycle_tab_unless_editing)
-        self.root.bind_all("<Control-Tab>", lambda _event=None: self.cycle_tab(1))
+        # Shift+Tab always cycles to the next tab, by explicit request: the
+        # user wants Chrome's feel, where Ctrl+Tab works everywhere including
+        # mid-edit in a text field. Shift+Tab is also the standard way to move
+        # focus backwards inside a field, and claiming it here means that
+        # reverse-focus navigation is unavailable while editing a request —
+        # a deliberate trade the user chose over having the shortcut only work
+        # some of the time.
+        for sequence in ("<Shift-Tab>", "<ISO_Left_Tab>", "<Control-Tab>"):
+            self.root.bind_all(sequence, lambda _event=None: self.cycle_tab(1))
         for sequence in ("<Control-Shift-Tab>", "<Command-Shift-braceleft>"):
             self.root.bind_all(sequence, lambda _event=None: self.cycle_tab(-1))
         self.root.bind_all("<Command-Shift-braceright>", lambda _event=None: self.cycle_tab(1))
@@ -432,27 +432,6 @@ class BrainstormApp:
             self.activate_tab(self.tabs[number - 1].tab_id)
         return "break"
 
-    def _cycle_tab_unless_editing(self, _event: object | None = None):
-        """Cycle tabs, unless the user is in a text field.
-
-        Returning None there lets Tk do its own thing, which for Shift+Tab is
-        moving focus backwards — the behaviour someone typing in a text box
-        expects, and which the app was overriding.
-        """
-        if self._focus_is_text_input():
-            return None
-        return self.cycle_tab(1)
-
-    def _focus_is_text_input(self) -> bool:
-        try:
-            widget = self.root.focus_get()
-        except Exception:
-            return False
-        if widget is None:
-            return False
-        # Class name rather than isinstance: CTk wraps the real tk widgets,
-        # and the wrapper is not what holds the focus.
-        return widget.winfo_class() in ("Text", "Entry", "TEntry")
 
     # ----------------------------------------------------------- background
 

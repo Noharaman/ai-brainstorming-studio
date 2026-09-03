@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from src import config
 from src.models import ScanResult
+from src.services import secret_redactor
 from src.services.chair_agent import CHAIR_SYSTEM_PROMPT, ChairAgent
 from src.services.role_orchestrator import RoleAssignment, RoleOrchestrator, RoleRound
 
@@ -56,7 +57,7 @@ Required format:
             timeout_seconds=config.LM_STUDIO_CONTEXT_TIMEOUT_SECONDS,
         )
         if summary:
-            return summary[: config.MAX_CONTEXT_PACK_CHARS]
+            return self._merge_pinned_context(scan, summary)
         return self._fallback_context_pack(scan, user_request)
 
     def build_agent_prompts(self, context_pack: str, user_request: str) -> dict[str, str]:
@@ -139,6 +140,8 @@ Questions or blockers:
         tree = "\n".join(scan.tree[: config.MAX_TREE_ITEMS])
         file_sections = []
         for name, content in scan.important_files.items():
+            if name == ".ai-shared/memory.md":
+                content = secret_redactor.redact(content)
             file_sections.append(f"## {name}\n\n{content[: config.MAX_FILE_READ_CHARS]}")
         vendor = "\n".join(scan.vendor_paths) or "None"
         important_files = "\n\n".join(file_sections)
@@ -159,7 +162,7 @@ Questions or blockers:
         important = ", ".join(scan.important_files) or "none detected"
         vendor = ", ".join(scan.vendor_paths) or "none detected"
         tree_preview = "\n".join(scan.tree[:80])
-        return f"""共通前提:
+        fallback = f"""共通前提:
 - 追加課金なし。API key / pay-as-you-go / 自動クレジット購入は禁止。
 - LM Studio が秘書兼議長AI。
 - README.md はAI内部メモとして自動作成・編集しない。
@@ -184,3 +187,32 @@ Questions or blockers:
 - 課金APIへの自動切り替え。
 - 危険操作や外部送信の無確認実行。
 """
+        return self._merge_pinned_context(scan, fallback)
+
+    def _merge_pinned_context(self, scan: ScanResult, summary: str) -> str:
+        """Keep shared rules and handoff verbatim instead of trusting a summary.
+
+        The chair may shorten or omit a project rule.  Every CLI must receive
+        the same deterministic cross-CLI state even when LM Studio is offline.
+        """
+        pinned = self._pinned_context(scan)
+        if not pinned:
+            return summary[: config.MAX_CONTEXT_PACK_CHARS]
+        separator = "\n\n議長AIによる要約:\n"
+        remaining = config.MAX_CONTEXT_PACK_CHARS - len(pinned) - len(separator)
+        if remaining <= 0:
+            return pinned[: config.MAX_CONTEXT_PACK_CHARS]
+        return pinned + separator + summary[:remaining]
+
+    def _pinned_context(self, scan: ScanResult) -> str:
+        sections: list[str] = []
+        for name, limit in (
+            ("AGENTS.md", 3500),
+            (".ai-shared/memory.md", 2500),
+        ):
+            content = scan.important_files.get(name, "").strip()
+            if content:
+                sections.append(f"### {name}\n{secret_redactor.redact(content)[:limit]}")
+        if not sections:
+            return ""
+        return "必ず保持する共通ルールと引継ぎ:\n\n" + "\n\n".join(sections)

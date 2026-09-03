@@ -8,10 +8,48 @@ from src import config
 from src.services import secret_redactor
 
 
+def _default_shared_memory() -> str:
+    today = datetime.now(timezone.utc).date().isoformat()
+    return f"""# Cross-CLI Shared Memory
+
+> Codex、Claude Code、Antigravity CLI が共有するローカル引継ぎです。プロジェクトの正本ではありません。利用前に実ファイル、Git状態、一次資料で再確認してください。
+> Last updated: {today} by AI Brainstorming Studio
+
+## Current objective
+
+- 未登録
+
+## Durable user decisions
+
+- 未登録
+
+## Confirmed current state
+
+- 未登録
+
+## Completed
+
+- 未登録
+
+## Next actions
+
+- 未登録
+
+## Blockers and risks
+
+- なし。古い記述は現状確認なしに事実として扱わない。
+
+## Recent handoffs
+
+- {today} | AI Brainstorming Studio | Cross-CLI shared memory initialized.
+"""
+
+
 class WorkspaceManager:
     def __init__(self, project_root: Path):
         self.project_root = project_root.resolve()
         self.brainstorm_dir = config.app_dir(self.project_root)
+        self.shared_dir = self.project_root / ".ai-shared"
 
     def validate(self) -> None:
         if not self.project_root.exists() or not self.project_root.is_dir():
@@ -20,8 +58,11 @@ class WorkspaceManager:
     def initialize(self) -> None:
         self.validate()
         self.brainstorm_dir.mkdir(exist_ok=True)
+        self.shared_dir.mkdir(exist_ok=True)
         for subdir in ("prompts", "sessions", "vendor_context"):
             (self.brainstorm_dir / subdir).mkdir(exist_ok=True)
+        self._write_shared_if_missing(".gitignore", "*\n")
+        self._write_shared_if_missing("memory.md", _default_shared_memory())
         self._write_manifest()
         self._write_if_missing("context.md", "# Project Context\n\n")
         self._write_if_missing("memory.md", "# Memory\n\n- No extra API cost.\n- Keep user-facing summaries short.\n")
@@ -90,6 +131,11 @@ class WorkspaceManager:
 
     def _write_if_missing(self, relative_path: str, content: str) -> None:
         path = self.brainstorm_dir / relative_path
+        if not path.exists():
+            path.write_text(content)
+
+    def _write_shared_if_missing(self, relative_path: str, content: str) -> None:
+        path = self.shared_dir / relative_path
         if not path.exists():
             path.write_text(content)
 

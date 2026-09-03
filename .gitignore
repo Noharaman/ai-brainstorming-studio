@@ -12,3 +12,76 @@ venv/
 CLAUDE.local.md
 node_modules/
 *.log
+
+# BEGIN portfolio-safety local exclusions (managed 2026-09-02)
+
+# Local AI state and machine-specific agent settings
+.ai-shared/
+.ai-brainstorm/
+.codex/
+.gemini/
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Environment files and local overrides
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.envrc
+.direnv/
+config.local.*
+
+# Credentials, private keys, signing material, and provider secrets
+credentials/
+secrets/
+credentials*.json
+secrets*.json
+client_secret*.json
+service-account*.json
+service_account*.json
+firebase-adminsdk*.json
+oauth*.json
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+*.mobileconfig
+*.ovpn
+id_rsa
+id_ed25519
+.npmrc
+.pypirc
+
+# Local databases and transient database files
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# OS, editor, cache, test, and log artifacts
+.DS_Store
+*.log
+*.tmp
+*.bak
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.wrangler/
+.vercel/
+.expo/
+
+# END portfolio-safety local exclusions

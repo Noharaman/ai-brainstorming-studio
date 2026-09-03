@@ -11,54 +11,30 @@ from src.gui.app import BrainstormApp
 from src.gui.project_tab import ProjectTab
 
 
-def _app_with_focus_on(widget_class: str | None) -> BrainstormApp:
-    app = BrainstormApp.__new__(BrainstormApp)
+class ShiftTabAlwaysCyclesTest(unittest.TestCase):
+    """By explicit request: Chrome's feel, where Ctrl+Tab works everywhere
+    including mid-edit in a text field. Shift+Tab is bound the same way here,
+    which means reverse-focus navigation inside a field is unavailable — a
+    trade the user chose over the shortcut only working some of the time.
 
-    class _Widget:
-        def winfo_class(self):
-            return widget_class
+    An earlier version stepped aside while a text field had focus; that
+    behaviour, and the helpers it needed, is gone.
+    """
 
-    class _Root:
-        def focus_get(self):
-            return None if widget_class is None else _Widget()
-
-    app.root = _Root()
-    return app
-
-
-class TabCyclingStepsAsideWhileTypingTest(unittest.TestCase):
-    """Shift+Tab moves focus backwards inside a text field. The app used to
-    claim the key everywhere, so that never worked while typing."""
-
-    def _cycle(self, widget_class):
-        app = _app_with_focus_on(widget_class)
-        calls = []
-        app.cycle_tab = lambda step: calls.append(step) or "break"
-        return app._cycle_tab_unless_editing(), calls
-
-    def test_typing_in_a_text_box_is_left_alone(self) -> None:
-        for widget_class in ("Text", "Entry", "TEntry"):
-            with self.subTest(widget=widget_class):
-                result, calls = self._cycle(widget_class)
-                self.assertIsNone(result, "returning None hands the key back to Tk")
-                self.assertEqual(calls, [], "tabs must not cycle while typing")
-
-    def test_elsewhere_it_still_cycles(self) -> None:
-        for widget_class in ("Button", "Frame", "CTkFrame", None):
-            with self.subTest(widget=widget_class):
-                result, calls = self._cycle(widget_class)
-                self.assertEqual(result, "break")
-                self.assertEqual(calls, [1])
-
-    def test_a_broken_focus_query_does_not_raise(self) -> None:
+    def test_the_focus_aware_helpers_are_gone(self) -> None:
         app = BrainstormApp.__new__(BrainstormApp)
+        self.assertFalse(hasattr(app, "_cycle_tab_unless_editing"))
+        self.assertFalse(hasattr(app, "_focus_is_text_input"))
 
-        class _Root:
-            def focus_get(self):
-                raise RuntimeError("no display")
+    def test_shift_tab_and_control_tab_bind_to_the_same_handler(self) -> None:
+        """Both must cycle forward unconditionally, with no focus check."""
+        import inspect
 
-        app.root = _Root()
-        self.assertFalse(app._focus_is_text_input())
+        source = inspect.getsource(BrainstormApp._bind_shortcuts)
+        for sequence in ("<Shift-Tab>", "<ISO_Left_Tab>", "<Control-Tab>"):
+            self.assertIn(sequence, source)
+        self.assertNotIn("_cycle_tab_unless_editing", source)
+        self.assertNotIn("focus_get", source)
 
 
 class SubmitShortcutIsScopedToTheRequestBoxTest(unittest.TestCase):

@@ -268,6 +268,7 @@ BLOCKED_CHILD_ENV_VARS = {
 EXCLUDED_DIRS = {
     ".git",
     APP_DIR_NAME,
+    ".ai-shared",
     "__pycache__",
     "node_modules",
     ".venv",
@@ -283,6 +284,7 @@ IMPORTANT_FILES = (
     "AGENTS.md",
     "CLAUDE.md",
     "GEMINI.md",
+    ".ai-shared/memory.md",
     "package.json",
     "pyproject.toml",
     "requirements.txt",

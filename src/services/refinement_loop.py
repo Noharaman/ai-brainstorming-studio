@@ -108,6 +108,8 @@ class RefinementLoop:
 
         session_id = self._new_session_id()
         workspace = WorkspaceManager(project_root)
+        emit("Initializing .ai-brainstorm...")
+        workspace.initialize()
         emit("Scanning project...")
         scan = ContextScanner(project_root).scan()
         emit(
@@ -115,9 +117,6 @@ class RefinementLoop:
             f"{len(scan.important_files)} important files, "
             f"{len(scan.vendor_paths)} existing AI config paths."
         )
-        emit("Initializing .ai-brainstorm...")
-        workspace.initialize()
-
         warnings: list[str] = []
         emit("Running preflight before sending the main request to AI CLIs...")
         preflight_results, preflight_warnings = await HealthChecker().preflight_all(
